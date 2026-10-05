@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng Thí Nghiệm Vật Lý 3D Đa Phân Hệ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex h-screen overflow-hidden select-none">
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Header -->
+    <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10 pointer-events-none">
+        <div class="glass-panel p-3 px-5 rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-auto border-cyan-500/20">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-atom animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent">PHYSICS LAB 3D</h1>
+                <p class="text-xs text-slate-400">Mô phỏng Vật lý Đa Phân Hệ & Tương Tác Trực Quan</p>
+            </div>
+        </div>
+
+        <!-- Player Controls Bar -->
+        <div class="glass-panel p-2 rounded-2xl flex items-center gap-2 shadow-2xl pointer-events-auto">
+            <button id="btn-play" class="w-10 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold flex items-center justify-center transition shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-play" id="icon-play"></i>
+            </button>
+            <button id="btn-reset" class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <div class="h-6 w-[1px] bg-slate-700/50 mx-1"></div>
+            <span class="text-xs text-slate-400 pl-1 font-medium">Tốc độ:</span>
+            <select id="select-speed" class="bg-slate-900/80 text-xs text-cyan-400 rounded-lg p-2 border border-slate-700/60 outline-none cursor-pointer font-semibold">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1.0x (Chuẩn)</option>
+                <option value="2">2.0x</option>
+                <option value="4">4.0x</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Left Controls Navigation & Parameters Sidebar -->
+    <div class="absolute top-20 left-4 w-88 max-h-[calc(100vh-6.5rem)] glass-panel rounded-2xl p-4 overflow-y-auto shadow-2xl flex flex-col gap-4 pointer-events-auto border-slate-700/50">
+        
+        <!-- Search Field -->
+        <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+            <input type="text" id="search-input" placeholder="Tìm kiếm hiện tượng..." class="w-full bg-slate-900/80 text-xs text-slate-200 rounded-xl pl-8 pr-3 py-2.5 border border-slate-700/60 outline-none focus:border-cyan-500 transition">
+        </div>
+
+        <!-- Phân hệ Topics Tabs -->
+        <div>
+            <label class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 block mb-2">1. Chọn Phân Hệ (Trang)</label>
+            <div id="category-tabs" class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900/60 rounded-xl border border-slate-800">
+                <!-- Dynamically generated category tabs -->
+            </div>
+        </div>
+
+        <!-- Phenomenon Dropdown Select -->
+        <div>
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">2. Hiện Tượng Vật Lý</label>
+            <select id="select-phenomenon" class="w-full bg-slate-900/90 text-xs font-semibold text-cyan-300 rounded-xl p-3 border border-slate-700/80 outline-none focus:border-cyan-500 transition cursor-pointer">
+                <!-- Dynamically Populated -->
+            </select>
+        </div>
+
+        <hr class="border-slate-800/80">
+
+        <!-- Dynamic Parameter Sliders Container -->
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <label class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Thông Số Đầu Vào</label>
+                <button id="btn-default-params" class="text-[10px] text-slate-400 hover:text-cyan-400 transition"><i class="fa-solid fa-sliders mr-1"></i>Mặc định</button>
+            </div>
+            <div id="controls-container" class="flex flex-col gap-3.5">
+                <!-- Dynamically Populated Inputs -->
+            </div>
+        </div>
+
+        <hr class="border-slate-800/80">
+
+        <!-- Display Toggles -->
+        <div class="flex flex-col gap-2">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Tùy Chọn Hiển Thị</label>
+            <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer glass-card p-2 rounded-xl">
+                <span>Hiện Quỹ Đạo Chuyển Động</span>
+                <input type="checkbox" id="toggle-trail" checked class="accent-cyan-500 w-4 h-4 rounded">
+            </label>
+            <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer glass-card p-2 rounded-xl">
+                <span>Vector Vận Tốc / Lực</span>
+                <input type="checkbox" id="toggle-vectors" checked class="accent-cyan-500 w-4 h-4 rounded">
+            </label>
+        </div>
+    </div>
+
+    <!-- Right Data Analytics Panel -->
+    <div class="absolute top-20 right-4 w-80 glass-panel rounded-2xl p-4 shadow-2xl flex flex-col gap-4 pointer-events-auto border-slate-700/50">
+        <h3 class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center justify-between">
+            <span><i class="fa-solid fa-chart-line text-cyan-400 mr-1.5"></i> Dữ Liệu Thời Gian Thực</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        </h3>
+
+        <!-- Realtime Data Cards Output -->
+        <div id="metrics-container" class="grid grid-cols-2 gap-2 text-xs">
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Energy / Dynamics Graph -->
+        <div class="mt-1">
+            <span class="text-[10px] font-semibold text-slate-400 block mb-2 uppercase tracking-wider">Biểu Đồ Năng Lượng / Thông Số</span>
+            <div class="w-full h-36 bg-slate-950/70 rounded-xl p-2 border border-slate-800">
+                <canvas id="energyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT ENGINE -->
+    <script src="script.js"></script>
+</body>
+</html>
